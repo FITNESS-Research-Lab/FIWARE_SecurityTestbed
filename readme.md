@@ -38,8 +38,8 @@ For more information, please refere to the following documentation:
 ### Setting up the Environment
 Clone the repository and navigate to the directory:
 ```shell
-git clone https://github.com/your-username/your-project.git
-cd your-project
+git clone https://github.com/FITNESS-Research-Lab/FIWARE_SecurityTestbed.git
+cd FIWARE_SecurityTestbed
 ```
 
 ## Usage
@@ -230,7 +230,7 @@ You have to change somethings:
 
 
 ## License
-This project is licensed under the [GPL-3.0]. You are welcome to utilize and share this repository. If you find this repository valuable for your research, please consider referencing the following paper, which incorporates insights from this testbed:
+You are welcome to utilize and share this repository. If you find this repository valuable for your research, please consider referencing the following paper, which incorporates insights from this testbed:
 
 [COPPOLINO, Luigi, et al. "Building Cyber-Resilient Smart Grids with Digital Twins and Data Spaces." Applied Sciences, 2023, 13.24: 13060.]
 
