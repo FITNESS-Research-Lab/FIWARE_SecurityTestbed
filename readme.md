@@ -7,7 +7,6 @@ This repository enables users to set up an environment for building a security t
 ## Table of Contents
 - [Requisites](#Requisites)
 - [Usage](#usage)
-- [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
 
@@ -50,7 +49,7 @@ Here's how to get started with the testbed:
    docker compose up -d
    ```
    This command starts all the services defined in the Docker Compose file. In particular, the full architecture deployed is the following:
-   ![Example Image](asset/sample_architecture.png)
+   ![Example Image](asset/architecture_cortina.png)
 
 
     1. **Devices**: The base of the architecture, these are the hardware components or sensors deployed in the field that generate data such as measurements and status updates.
@@ -80,6 +79,7 @@ It is possible to access some services reaching the following links:
 
    To handle the interaction with the Orion Context Broker and to build the digital twin please refere to the following links:
    - Orion-LD Reference Material at `https://ngsi-ld-tutorials.readthedocs.io/en/latest/ngsi-ld-operations.html`
+   - Understanding Subscription Methods at `https://github.com/FIWARE/tutorials.LD-Subscriptions-Registrations`
 
    To understand the Kafka publish-subscribe mechanism following the link below:
    - Kafka Refrence Material at `https://www.confluent.io/learn/publish-subscribe/`
@@ -146,33 +146,101 @@ curl --location --request PATCH 'http://localhost:1026/ngsi-ld/v1/entities/urn:n
 }'
 
    ```
+The next step is to model the subscription for the particular device, this allow the notified values to be sent (with relevant information attached) to a particular endpoint. In this tutorial we don't care about the endpoint because we will utilize the connector endpoint after for sending all the values to the kafka broker.
+
+For setting the subscription:
+
 
 
 ```shell
+curl --location 'http://localhost:1026/ngsi-ld/v1/subscriptions' \
+--header 'Content-Type: application/json' \
+--header 'Link: <http://context/ngsi-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
+--header 'Ngsild-Tenant: basetopic' \
+--data '{
+  "description": "notification_test",
+  "type": "Subscription",
+  "entities": [{"type": "TemperatureSensor"}],
+  "watchedAttributes": ["temperature"],
+  "notification": {
+    "attributes": ["temperature"],
+    "format": "keyValues",
+    "endpoint": {
+      "uri": "http://10.113.29.69:2020/forward",
+      "accept": "application/json"
+    }
+  }
+}'
 
    ```
+
+For Updating the endpoint of the subscriptions with the endpoint of the connector:
+
+   ```shell
+curl --location 'http://localhost:2020/UpdateSub'
+
+   ```
+
+The process can be represented as:
+
+![Example Image2](asset/subscription.png)
 
 
 
 ### Enabling Grafana Visualization trough OpenSearch
+After setting up the digital twin, it's time to create a simple dashboard to enable the visualization of measurements captured by the devices.
+To do this, you can use Grafana. (Click on this link http://localhost:3000)
 
-## Contributing
-We welcome contributions! Please read our [Contributing Guidelines](LINK_TO_CONTRIBUTING_GUIDELINES) for more information on how to report issues, submit pull requests, and contribute to the code.
+Once you have clicked on the link, you will need to proceed with authentication. Please insert the following credentials:
+
+Username: admin
+
+Password: admin
+
+When you open Grafana, follow these steps to use OpenSearch.
+1. Add your first datasource;
+2. Search and click on OpenSearch.
+
+![Example Image](asset/welcometografana.png)
+
+Now, you are ready for set your First Data Source.
+Please, follow these instructions.
+
+![Example Image](asset/opensearch.png)
+
+![Example Image](asset/opensearch2.png)
+
+After that, you can create your dashboard.
+To do this, click on "Create your first dashboard", and go to "Add a new panel".
+
+![Example Image](asset/dashboard.png)
+
+You are quite ready.
+You have to change somethings:
+1. Filter only data from the last few days.
+2. Change your visualization, and switch to "Table".
+3. After, click on Query and among metrics, choose "Raw Data".
+4. In Trasform, add "Extract fields", like follows.
+
+
+![Example Image](asset/dashboard2.png)
+![Example Image](asset/dashboard3.png)
+
+
+
 
 ## License
-This project is licensed under the [YOUR LICENSE NAME](LINK_TO_LICENSE).
+This project is licensed under the [GPL-3.0]. You are welcome to utilize and share this repository. If you find this repository valuable for your research, please consider referencing the following paper, which incorporates insights from this testbed:
+
+[COPPOLINO, Luigi, et al. "Building Cyber-Resilient Smart Grids with Digital Twins and Data Spaces." Applied Sciences, 2023, 13.24: 13060.]
+
+Read the paper at: [Building Cyber-Resilient Smart Grids with Digital Twins and Data Spaces](https://www.mdpi.com/2076-3417/13/24/13060)
+
+
 
 ## Contact
-For any queries or further information, please contact [YOUR EMAIL/CONTACT INFORMATION].
+For any queries or further information, please contact FITNESS Lab:
+
+`http://www.fitnesslab.eu/`
 
 ---
-
-#### Docker Compose Configuration Explained
-Here's a brief overview of each service in the `docker-compose.yml`:
-
-- `fiware_connector`: Connects FIWARE components, accessible on port 2020.
-- `orion`: FIWARE Orion context broker, listens on port 1026.
-- `mongo-db`: MongoDB service for data persistence, exposed on port 27017.
-- ...
-
-(Remainder of the Docker Compose services with brief explanations)
