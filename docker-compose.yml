@@ -1,0 +1,181 @@
+version: "3.5"
+
+services:
+
+  fiware_connector:
+    image: trustup/cs2f
+    hostname: cs2f
+    ports:
+      - "2020:2020"
+    networks: 
+      - try
+    
+  orion:
+    image: fiware/orion-ld
+    hostname: orion
+    container_name: fiware-orion
+    expose:
+      - "1026"
+    ports:
+      - "1026:1026"
+    depends_on:
+      - mongo-db
+    command: -dbhost mongo-db -logLevel DEBUG
+    networks:
+      - try
+
+  mongo-db:
+    image: mongo:3.6
+    hostname: mongo-db
+    container_name: db-mongo
+    ports:
+      - "27017:27017" 
+    networks:
+      - try
+    command: --nojournal
+    volumes:
+      - mongo-db:/data
+      
+  # @context file is served from here
+  ld-context:
+    labels:
+      org.fiware: 'tutorial'
+    image: httpd:alpine
+    hostname: context
+    container_name: fiware-ld-context
+    ports:
+        - "3004:80"
+    networks:
+      - try
+    volumes:
+        - ./conf/data-models:/usr/local/apache2/htdocs/
+    healthcheck:
+      test: (wget --server-response --spider --quiet  http://ld-context/ngsi-context.jsonld 2>&1 | awk 'NR==1{print $$2}'|  grep -q -e "200") || exit 1
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:${ZOOKEEPER_VERSION}
+    container_name: zookeeper
+    hostname: zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT}
+    volumes:
+      - siem-zookeeper-data:/var/lib/zookeeper/data
+      - siem-zookeeper-log-data:/var/lib/zookeeper/log
+    ports:
+      - ${ZOOKEEPER_PORT}:${ZOOKEEPER_EXPOSED_PORT}
+    networks:
+      - try
+
+  kafka:
+    image: confluentinc/cp-kafka:${KAFKA_VERSION}
+    container_name: kafka
+    hostname: kafka
+    environment:
+      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
+      KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    restart: always
+    volumes:
+      - siem-kafka-data:/var/lib/kafka/data
+
+    ports:
+      - ${KAFKA_OUTSIDE_PORT}:${KAFKA_OUTSIDE_PORT}
+    networks:
+      - try
+  
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION}
+    container_name: grafana
+    hostname: grafana
+    volumes:
+      - siem-grafana-storage:/var/lib/grafana
+      - ./conf/grafana/grafana.ini:/etc/grafana/grafana.ini
+    user: root
+    ports:
+      - ${GRAFANA_INTERNAL_PORT}:${GRAFANA_EXPOSED_PORT}
+    entrypoint: /bin/bash -c "grafana-cli plugins install grafana-opensearch-datasource && /run.sh"
+    restart: unless-stopped
+    networks:
+      - try
+
+  opensearch-node1:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch-node1
+    hostname: opensearch-node1
+    environment:
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - discovery.seed_hosts=opensearch-node1 #,opensearch-node2
+      - cluster.initial_cluster_manager_nodes=opensearch-node1 #,opensearch-node2
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    volumes:
+      - siem-opensearch-data1:/usr/share/opensearch/data
+    ports:
+      - 9200:9200
+      - 9600:9600 # required for Performance Analyzer
+    networks:
+      - try
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    hostname: opensearch-dashboards
+    ports:
+      - 5601:5601
+    expose:
+      - "5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch-node1:9200"]' #',"https://opensearch-node2:9200"]'
+    networks:
+      - try
+
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.6.1
+    restart: unless-stopped
+    container_name: logstash
+    hostname: logstash
+    ports:
+      - 5044:5044
+      - 5047:5047
+      - 5046:5046
+    volumes:
+      - siem-logstash-data:/usr/share/logstash/data
+      - ./conf/logstash/pipeline/:/usr/share/logstash/pipeline/
+      - ./conf/logstash/settings/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+    networks:
+      - try
+
+
+volumes:
+  mongo-db: ~
+  mongo-config: ~
+  siem-kafka-data:
+    name: siem-kafka-data
+  siem-zookeeper-data:
+    name: siem-zookeeper-data
+  siem-logstash-data:
+    name: siem-logstash-data
+  siem-zookeeper-log-data:
+    name: siem-zookeeper-log-data
+  siem-grafana-storage:
+    name: siem-grafana-storage
+  siem-opensearch-data1:
+    name: siem-opensearch-data1    
+networks:
+  try:
+    name: try
+
