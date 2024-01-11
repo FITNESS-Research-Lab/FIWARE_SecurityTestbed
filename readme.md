@@ -49,6 +49,13 @@ Here's how to get started with the testbed:
    ```shell
    docker compose up -d
    ```
+
+   In case of Openseaerch will Exit, you may need to add ```vm.max_map_count=262144``` in your ***/etc/sysctl.conf*** and run:
+
+   ```bash
+   sudo sysctl -p
+   ```
+
    This command starts all the services defined in the Docker Compose file. In particular, the full architecture deployed is the following:
    ![Example Image](asset/sample_architecture.png)
 
