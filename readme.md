@@ -49,7 +49,7 @@ Here's how to get started with the testbed:
    docker compose up -d
    ```
 
-   In case of Openseaerch will Exit, you may need to add ```vm.max_map_count=262144``` in your ***/etc/sysctl.conf*** and run:
+   If Opensearch container stops, add ```vm.max_map_count=262144``` in your ***/etc/sysctl.conf*** (on Linux environment) and run:
 
    ```bash
    sudo sysctl -p
