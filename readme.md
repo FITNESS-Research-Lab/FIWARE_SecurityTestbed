@@ -239,9 +239,9 @@ You have to change somethings:
 ## License
 You are welcome to utilize and share this repository. If you find this repository valuable for your research, please consider referencing the following paper, which incorporates insights from this testbed:
 
-[COPPOLINO, Luigi, et al. "Building Cyber-Resilient Smart Grids with Digital Twins and Data Spaces." Applied Sciences, 2023, 13.24: 13060.]
+[Coppolino, Luigi, et al. "Exploiting digital twin technology for cybersecurity monitoring in smart grids." Proceedings of the 18th International Conference on Availability, Reliability and Security. 2023.]
 
-Read the paper at: [Building Cyber-Resilient Smart Grids with Digital Twins and Data Spaces](https://www.mdpi.com/2076-3417/13/24/13060)
+Read the paper at: [[Building Cyber-Resilient Smart Grids with Digital Twins and Data Spaces](https://www.mdpi.com/2076-3417/13/24/13060)](https://dl.acm.org/doi/abs/10.1145/3600160.3605043)
 
 
 
